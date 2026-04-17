@@ -1,6 +1,6 @@
-# Diseño de una Gramática para Operaciones CRUD en una Base de Datos No Relacional
+# Diseño Gramática CRUD 
  
-Se diseña una gramática de un lenguaje de programación que permite realizar las operaciones fundamentales de CRUD (Create, Read, Update, Delete) sobre una base de datos no relacional. El diseño de esta gramática refleja de forma natural las características semánticas del lenguaje en el árbol de derivación, facilitando que la traducción hacia motores de bases de datos sea más sencilla.
+Se diseña una gramática de un lenguaje de programación que permite realizar las operaciones fundamentales de CRUD (Create, Read, Update, Delete) sobre una base de datos no relacional. 
  
 ---
  
