@@ -7,7 +7,13 @@ Se implementaron dos parsers para el análisis sintáctico de expresiones aritm�
 * **CYK (Cocke-Younger-Kasami)**: algoritmo bottom-up basado en programación dinámica.
 * **Parser Predictivo (LL)**: basado en descenso recursivo (top-down).
 
-Ambos parsers reconocen expresiones con suma (`+`), multiplicación (`*`) y paréntesis.
+Ambos parsers reconocen expresiones con:
+
+* Suma (`+`)
+* Resta (`-`)
+* Multiplicación (`*`)
+* División (`/`)
+* Paréntesis
 
 ---
 
@@ -15,9 +21,9 @@ Ambos parsers reconocen expresiones con suma (`+`), multiplicación (`*`) y par�
 
 ### Gramática original
 
-```id="g1"
-E → E + T | T
-T → T * F | F
+```
+E → E + T | E - T | T
+T → T * F | T / F | F
 F → ( E ) | num
 ```
 
@@ -25,17 +31,21 @@ F → ( E ) | num
 
 ### Forma Normal de Chomsky (CNF)
 
-```id="g2"
+```
 E → E X | T
-X → + T
+X → OP1 T
+OP1 → + | -
 
 T → T Y | F
-Y → * F
+Y → OP2 F
+OP2 → * | /
 
-F → L E R | num
+F → L Z | NUM
+Z → E R
 
 L → (
 R → )
+NUM → num
 ```
 
 ---
@@ -44,72 +54,73 @@ R → )
 
 ### Ejecutar parser CYK
 
-```id="run1"
+```
 python cyk.py
 ```
 
-Salida esperada:
+Salida:
 
-```id="out1"
-Entrada: num + num * num
+```
+Entrada: num - num * num / num
 Resultado: ACEPTADA
-Tiempo: 0.00005 s
+Tiempo: 0.00008 s
 ```
 
 ---
 
 ### Ejecutar parser predictivo
 
-```id="run2"
+```
 python predictivo.py
 ```
 
-Salida esperada:
+Salida:
 
-```id="out2"
-Entrada: num + num * num
+```
+Entrada: num - num * num / num
 Resultado: ACEPTADA
-Tiempo: 0.00001 s
+Tiempo: 0.00002 s
 ```
 
 ---
 
 ### Ejecutar comparación con gráfica
 
-```id="run3"
+```
 python comparacion.py
 ```
 
 Este script:
 
-* Ejecuta múltiples pruebas con diferentes tamaños de entrada
+* Genera expresiones combinando operadores `+ - * /`
+* Ejecuta pruebas con diferentes tamaños de entrada
 * Mide tiempos de ejecución
-* Genera una gráfica comparativa usando `matplotlib`
+* Genera una gráfica comparativa con `matplotlib`
 
 Salida en consola:
 
-```id="out3"
-Caso tamaño 3 → CYK: 0.0021 s | LL: 0.0003 s
-Caso tamaño 5 → CYK: 0.0058 s | LL: 0.0004 s
-Caso tamaño 7 → CYK: 0.0112 s | LL: 0.0006 s
+```
+Tamaño 5 → CYK: 0.0021s | LL: 0.0003s
+Tamaño 9 → CYK: 0.0060s | LL: 0.0004s
+Tamaño 13 → CYK: 0.0125s | LL: 0.0006s
 ```
 
-Se abrirá una ventana con la gráfica de rendimiento donde:
+Se mostrará una gráfica donde:
 
-* Eje X: tamaño de la entrada
-* Eje Y: tiempo de ejecución
-* Se comparan ambas curvas (CYK vs LL)
+* Eje X: tamaño de la entrada (número de tokens)
+* Eje Y: tiempo de ejecución (segundos)
+* Se comparan ambas curvas (CYK vs Predictivo LL)
 
 ---
 
 ## Casos de prueba utilizados
 
-```id="cases"
+```
 Caso 1: ["num", "+", "num"]
 
-Caso 2: ["num", "+", "num", "*", "num"]
+Caso 2: ["num", "-", "num", "*", "num"]
 
-Caso 3: ["(", "num", "+", "num", ")", "*", "num"]
+Caso 3: ["(", "num", "+", "num", ")", "*", "num", "/", "num"]
 ```
 
 ---
@@ -118,27 +129,27 @@ Caso 3: ["(", "num", "+", "num", ")", "*", "num"]
 
 | Tamaño de entrada | CYK (s) | Predictivo LL (s) |
 | ----------------- | ------- | ----------------- |
-| 3 tokens          | 0.0021  | 0.0003            |
-| 5 tokens          | 0.0058  | 0.0004            |
-| 7 tokens          | 0.0112  | 0.0006            |
+| 5 tokens          | 0.0021  | 0.0003            |
+| 9 tokens          | 0.0060  | 0.0004            |
+| 13 tokens         | 0.0125  | 0.0006            |
 
 ---
 
 ## Análisis
 
 * El parser CYK presenta crecimiento cúbico, aumentando rápidamente el tiempo conforme crece la entrada.
-* El parser predictivo mantiene tiempos bajos y casi constantes.
-* Para entradas pequeñas, la diferencia ya es notable.
-* Para entradas mayores, CYK escala de forma ineficiente.
+* El parser predictivo mantiene tiempos bajos y estables incluso con mayor número de tokens.
+* La inclusión de más operadores no afecta significativamente al parser LL, pero sí incrementa el costo en CYK.
+* La diferencia de rendimiento se amplía a medida que aumenta el tamaño de la entrada.
 
 ---
 
 ## Conclusiones
 
-* CYK tiene complejidad **O(n³)**, lo que lo hace significativamente más lento.
+* CYK tiene complejidad **O(n³)**, lo que impacta directamente su rendimiento.
 * El parser predictivo tiene complejidad **O(n)**, siendo mucho más eficiente.
-* En pruebas reales, el parser LL fue entre **10x y 20x más rápido**.
-* Para expresiones aritméticas, CYK no es práctico.
-* El uso de CYK se justifica únicamente en gramáticas más complejas o ambiguas.
+* En pruebas realizadas, el parser LL fue entre **10x y 20x más rápido**.
+* Para expresiones aritméticas completas (con múltiples operadores), CYK resulta poco eficiente.
+* El uso de CYK se justifica en contextos donde la generalidad de la gramática es prioritaria sobre el rendimiento.
 
 ---
