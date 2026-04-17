@@ -2,20 +2,6 @@
 
 Implementación de una gramática para operaciones CRUD sobre bases de datos no relacionales. Construida con **ANTLR4** y ejecutada con **Python**.
 
----
-
-## Requisitos
-
-- Python `>= 3.10`
-- Java `>= 11`
-
-```bash
-pip install antlr4-python3-runtime==4.13.2
-curl -O https://www.antlr.org/download/antlr-4.13.2-complete.jar
-```
-
----
-
 ## Estructura del proyecto
 
 ```
