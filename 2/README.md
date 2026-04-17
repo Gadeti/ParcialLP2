@@ -1,63 +1,97 @@
-# DSL NoSQL-CRUD Grammar
+# DSL NoSQL-CRUD — Implementación ANTLR4 + Python
 
-Gramática formal diseñada con **ANTLR4** para realizar operaciones CRUD sobre bases de datos no relacionales. Define un lenguaje de dominio específico (DSL) con sintaxis estructurada, jerarquía de precedencia lógica y validación léxica completa.
-
----
-
-## Operaciones soportadas
-
-| Operación | Sintaxis |
-| :--- | :--- |
-| **Insertar** | `INSERT INTO <colección> VALUES { ... }` |
-| **Consultar** | `FIND IN <colección> WHERE <filtro>` |
-| **Actualizar** | `UPDATE <colección> SET { ... } WHERE <filtro>` |
-| **Eliminar** | `REMOVE FROM <colección> WHERE <filtro>` |
-
----
-
-## Ejemplos de uso
-
-```
-INSERT INTO clientes VALUES { nombre: "Juan", edad: 25 }
-
-FIND IN stock WHERE precio > 100 && activo == true
-
-UPDATE usuarios SET { activo: false } WHERE rol == "invitado"
-
-REMOVE FROM logs WHERE nivel == "debug" || nivel == "info"
-```
-
----
-
-## Estructura de la gramática
-
-La gramática se organiza en cinco bloques principales dentro de `NoSQLCRUD.g4`:
-
-- **Programa:** acepta una o más instrucciones secuenciales (`instruccion+`).
-- **Operaciones CRUD:** cada comando mapea directamente a una regla de producción.
-- **Objetos:** estructura JSON-like con derivación recursiva de listas de pares `clave: valor`.
-- **Filtros:** tres niveles de precedencia para evitar ambigüedad: `||` (menor) → `&&` (media) → operadores relacionales (mayor), todos con asociatividad por la izquierda.
-- **Léxico:** tokens para identificadores, literales, operadores relacionales y manejo de espacios en blanco.
-
----
-
-## Casos de prueba
-
-| # | Entrada | Resultado esperado |
-| :---: | :--- | :--- |
-| 1 | `INSERT INTO clientes VALUES { nombre: "Juan", edad: 25 }` | ✅ ÉXITO — valida reducción de `listaAtributos` |
-| 2 | `FIND IN stock WHERE precio > 100 && activo == true` | ✅ ÉXITO — `>` se evalúa antes que `&&` |
-| 3 | `INSERT INTO col VALUES { a:1 b:2 }` | ❌ ERROR — falta `,` entre pares |
-| 4 | `FIND IN productos WHERE precio >` | ❌ ERROR — filtro incompleto, expresión no válida |
+Implementación de una gramática para operaciones CRUD sobre bases de datos no relacionales. Construida con **ANTLR4** y ejecutada con **Python**.
 
 ---
 
 ## Requisitos
 
-- [ANTLR4](https://www.antlr.org/) `>= 4.13`
-- Python `>= 3.10` con `antlr4-python3-runtime`
+- Python `>= 3.10`
+- Java `>= 11`
 
 ```bash
-pip install antlr4-python3-runtime
-antlr4 -Dlanguage=Python3 NoSQLCRUD.g4
+pip install antlr4-python3-runtime==4.13.2
+curl -O https://www.antlr.org/download/antlr-4.13.2-complete.jar
 ```
+
+---
+
+## Estructura del proyecto
+
+```
+NoSQLCRUD/
+├── NoSQLCRUD.g4       # Gramática GIC con reglas CRUD
+├── main.py            # Pruebas de análisis sintáctico
+└── generated/         # Generado automáticamente por ANTLR4
+    ├── NoSQLCRUDLexer.py
+    ├── NoSQLCRUDParser.py
+    └── NoSQLCRUDListener.py
+```
+
+---
+
+## Ejecución
+
+```bash
+java -jar antlr-4.13.2-complete.jar -Dlanguage=Python3 -o generated NoSQLCRUD.g4 && python main.py
+```
+
+> La compilación con ANTLR4 solo es necesaria la primera vez, o cuando se modifique `NoSQLCRUD.g4`. Para ejecuciones posteriores basta con:
+>
+> ```bash
+> python main.py
+> ```
+
+---
+
+## Pruebas y salida esperada
+
+### ✅ Prueba 1 — Inserción con objeto complejo
+```
+Entrada:  INSERT INTO clientes VALUES { nombre: "Juan", edad: 25 }
+Salida:   [ÉXITO] Árbol sintáctico generado.
+```
+
+### ✅ Prueba 2 — Consulta con precedencia booleana
+```
+Entrada:  FIND IN stock WHERE precio > 100 && activo == true
+Salida:   [ÉXITO] Árbol sintáctico generado.
+```
+> `precio > 100` se reduce antes que `&&`, confirmando la jerarquía de precedencia.
+
+### ✅ Prueba 3 — Actualización con filtro OR
+```
+Entrada:  UPDATE usuarios SET { activo: false } WHERE rol == "invitado" || rol == "temporal"
+Salida:   [ÉXITO] Árbol sintáctico generado.
+```
+
+### ✅ Prueba 4 — Eliminación simple
+```
+Entrada:  REMOVE FROM logs WHERE nivel == "debug"
+Salida:   [ÉXITO] Árbol sintáctico generado.
+```
+
+### ❌ Prueba 5 — Error: falta coma entre pares
+```
+Entrada:  INSERT INTO col VALUES { a:1 b:2 }
+Salida:   [ERROR] línea 1:20 → mismatched input 'b' expecting {',', '}'}
+```
+
+### ❌ Prueba 6 — Error: filtro incompleto
+```
+Entrada:  FIND IN productos WHERE precio >
+Salida:   [ERROR] línea 1:32 → no viable alternative at input 'precio >'
+```
+
+---
+
+## Gramática aplicada
+
+| Concepto GIC | Regla en la gramática |
+| :--- | :--- |
+| Raíz del programa | `program → instruccion+ EOF` |
+| Operaciones CRUD | `crear`, `leer`, `actualizar`, `borrar` |
+| Derivación de listas | `listaAtributos → par (',' par)*` |
+| Precedencia — nivel 1 (OR) | `filtro → filtro '\|\|' terminoAnd` |
+| Precedencia — nivel 2 (AND) | `terminoAnd → terminoAnd '&&' comparacion` |
+| Precedencia — nivel 3 (relacional) | `comparacion → ID OP_REL valor` |
