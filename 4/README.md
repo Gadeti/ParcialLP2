@@ -1,6 +1,6 @@
-# 🧮 Parser de Expresiones: CYK vs Predictivo (LL)
+# Parser de Expresiones: CYK vs Predictivo (LL)
 
-## 📌 Descripción
+## Descripción
 
 Se implementaron dos parsers para el análisis sintáctico de expresiones aritméticas:
 
@@ -11,7 +11,7 @@ Ambos parsers reconocen expresiones con suma (`+`), multiplicación (`*`) y par�
 
 ---
 
-## 🧠 Gramática utilizada
+## Gramática utilizada
 
 ### Gramática original
 
@@ -40,7 +40,7 @@ R → )
 
 ---
 
-## ▶️ Ejecución
+## Ejecución
 
 ### Ejecutar parser CYK
 
@@ -102,7 +102,7 @@ Se abrirá una ventana con la gráfica de rendimiento donde:
 
 ---
 
-## 🧪 Casos de prueba utilizados
+## Casos de prueba utilizados
 
 ```id="cases"
 Caso 1: ["num", "+", "num"]
@@ -124,7 +124,7 @@ Caso 3: ["(", "num", "+", "num", ")", "*", "num"]
 
 ---
 
-## 📊 Análisis
+## Análisis
 
 * El parser CYK presenta crecimiento cúbico, aumentando rápidamente el tiempo conforme crece la entrada.
 * El parser predictivo mantiene tiempos bajos y casi constantes.
@@ -133,7 +133,7 @@ Caso 3: ["(", "num", "+", "num", ")", "*", "num"]
 
 ---
 
-## 🧩 Conclusiones
+## Conclusiones
 
 * CYK tiene complejidad **O(n³)**, lo que lo hace significativamente más lento.
 * El parser predictivo tiene complejidad **O(n)**, siendo mucho más eficiente.
