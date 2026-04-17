@@ -1,50 +1,59 @@
-# ESPECIFICACIÓN TÉCNICA: DSL NoSQL-CRUD
+# Diseño de una Gramática para Operaciones CRUD en una Base de Datos No Relacional
  
-Este documento define la estructura formal del lenguaje de dominio específico (DSL) para operaciones CRUD en bases de datos no relacionales, siguiendo los estándares de diseño de procesadores de lenguajes [1].
+Se diseña una gramática de un lenguaje de programación que permite realizar las operaciones fundamentales de CRUD (Create, Read, Update, Delete) sobre una base de datos no relacional. El diseño de esta gramática refleja de forma natural las características semánticas del lenguaje en el árbol de derivación, facilitando que la traducción hacia motores de bases de datos sea más sencilla.
  
 ---
  
-## 1. Definición de la Gramática (GIC)
+## 1. Definición de la Gramática Independiente del Contexto (GIC)
  
-Siguiendo el modelo de una **Gramática Independiente del Contexto (GIC)**, el lenguaje se descompone en los siguientes símbolos no terminales para organizar la jerarquía del programa [2].
+Se definen los símbolos no terminales para organizar la jerarquía lógica del programa.
  
 | No Terminal | Reglas de Producción | Descripción |
 | :--- | :--- | :--- |
-| **S** | `program` → `instruccion+` | Raíz del programa (Secuencia de comandos). |
-| **Instruccion** | `crear` \| `leer` \| `actualizar` \| `borrar` | Operaciones CRUD fundamentales. |
-| **Crear** | `INSERT INTO ID VALUES objeto` | Inserción de documentos en colecciones. |
-| **Leer** | `FIND IN ID WHERE filtro` | Consulta de datos con filtrado lógico. |
-| **Objeto** | `{ listaAtributos? }` | Estructura de datos tipo JSON. |
-| **Filtro** | `filtro \|\| terminoAnd` \| `terminoAnd` | Nivel de precedencia 1 (Disyunción). |
-| **TerminoAnd** | `terminoAnd && comparacion` \| `comparacion` | Nivel de precedencia 2 (Conjunción). |
-| **Comparacion** | `ID OP_REL valor` | Nivel de precedencia 3 (Relacional). |
+| **S** | `program` → `instruccion+` | Raíz del programa (soporta múltiples comandos). |
+| **Instruccion** | `crear` \| `leer` \| `actualizar` \| `borrar` | Clasificación semántica de operaciones. |
+| **Crear** | `INSERT INTO ID VALUES objeto` | Operación de inserción de documentos. |
+| **Leer** | `FIND IN ID WHERE filtro` | Consulta con lógica de filtrado. |
+| **Actualizar** | `UPDATE ID SET objeto WHERE filtro` | Modificación de documentos existentes. |
+| **Borrar** | `REMOVE FROM ID WHERE filtro` | Eliminación de registros según condición. |
+| **Objeto** | `{ listaAtributos? }` | Estructura de datos JSON-like. |
  
 ---
  
-## 2. Jerarquía de Precedencia y Asociatividad
+## 2. Jerarquía de Precedencia y Asociatividad de Expresiones
  
-Para evitar la **ambigüedad** en el análisis sintáctico lineal, la gramática utiliza terminales distintos para cada nivel de prioridad [2]:
+Para evitar ambigüedades en los filtros (cláusula `WHERE`), se implementa un no terminal distinto para cada nivel de precedencia.
  
-1. **Mayor Precedencia:** Operadores relacionales (`==`, `!=`, `>`, `<`, `>=`, `<=`). Se evalúan primero.
-2. **Precedencia Media:** Operador lógico `&&` (AND).
-3. **Menor Precedencia:** Operador lógico `||` (OR).
-**Asociatividad:** Las reglas están diseñadas con **asociatividad por la izquierda** (ej. `filtro -> filtro || terminoAnd`), lo que garantiza que las expresiones se agrupen de izquierda a derecha durante la construcción del árbol [2].
+| Nivel | Operador | No Terminal | Asociatividad | Precedencia |
+| :---: | :--- | :--- | :--- | :--- |
+| 1 | `\|\|` (OR) | `filtro` | Izquierda (`E → E op T`) | Menor |
+| 2 | `&&` (AND) | `terminoAnd` | Izquierda (`E → E op T`) | Media |
+| 3 | `==`, `!=`, `>`, `<`, `>=`, `<=` | `comparacion` | N/A (Relacional) | Mayor |
  
----
- 
-## 3. Estructura de Datos: Derivación de Listas
- 
-El manejo de múltiples atributos dentro de un objeto se resuelve mediante una **derivación recursiva**, similar a la declaración de variables en lenguajes como C o Java [2]:
- 
-- `listaAtributos` → `par` (`,` `par`)*
-- `par` → `ID : valor`
-Este diseño permite que el **Analizador Sintáctico Ascendente (ASA)** reconstruya la inversa de una derivación por la derecha de manera eficiente, acumulando tokens para validar la sintaxis del objeto [2].
+> **Nota de diseño:** Al definir `filtro → filtro || terminoAnd`, se garantiza que el operador `||` sea asociativo por la izquierda, procesando de forma lineal el árbol sintáctico.
  
 ---
  
-## 4. Ejemplo de Árbol de Derivación (Parse Tree)
+## 3. Estructura de Datos y Derivación de Listas (ASA)
  
-Sentencia de entrada: `FIND IN logs WHERE tipo == "error" && severidad > 5`
+Para el manejo de múltiples atributos (ej. `nombre: "X", edad: 20`), se aplica el concepto de derivación de listas, análogo al manejo de declaraciones como `int a, b, c;` en otros lenguajes.
+ 
+Un **Analizador Sintáctico Ascendente (ASA)** reconstruiría la inversa de una derivación por la derecha de la siguiente forma:
+ 
+```
+Entrada:          ID : valor , ID : valor
+Reducción 1:      par        , ID : valor
+Reducción 2:      par        , par
+Reducción Final:  listaAtributos
+```
+ 
+Esto permite que el procesador de lenguaje valide secuencias arbitrariamente largas de datos de forma eficiente.
+ 
+---
+ 
+## 4. Visualización del Árbol de Derivación (Parse Tree)
+ 
+Sentencia de entrada: `FIND IN ventas WHERE total > 100 || zona == "norte"`
  
 ```text
            [program]
@@ -54,32 +63,33 @@ Sentencia de entrada: `FIND IN logs WHERE tipo == "error" && severidad > 5`
             [leer]
       _________|__________________________________________
      |    |    |   |            [filtro]
-   FIND   IN   ID WHERE            |
-             (logs)           [terminoAnd]
-                    _______________|______________________
-                   |               |                      |
-             [terminoAnd]          &&               [comparacion]
-                   |                                ______|______
-             [comparacion]                         |      |      |
-         __________|__________                     ID   OP_REL  valor
-        |          |          |               (severidad) (>)    (5)
-        ID       OP_REL     valor
-      (tipo)      (==)     ("error")
+   FIND   IN   ID WHERE   __________|____________________
+             (ventas)    |          |                    |
+                      [filtro]      ||             [terminoAnd]
+                         |                               |
+                   [terminoAnd]                    [comparacion]
+                         |                          _____|_____
+                   [comparacion]                   |     |     |
+                 ________|________                 ID  OP_REL valor
+                |        |        |             (zona)  (==) ("norte")
+                ID     OP_REL   valor
+             (total)    (>)     (100)
 ```
  
-> El diseño asegura que los operadores de mayor prioridad (comparaciones) queden en las hojas más profundas del árbol, evaluándose antes que los operadores lógicos.
+> El diseño asegura que las comparaciones `total > 100` y `zona == "norte"` se encuentren en niveles más profundos del árbol, evaluándose antes de aplicar el operador lógico `||`.
  
 ---
  
 ## 5. Especificación de Tokens (Análisis Léxico)
  
-Basado en el modelo de implementación ANTLR + Python utilizado en el caso de estudio KAFE [2]:
+Inspirado en el caso de estudio KAFE (construido con ANTLR + Python), se definen los siguientes componentes léxicos:
  
 | Token | Expresión Regular / Valor | Función |
 | :--- | :--- | :--- |
-| `ID` | `[a-zA-Z_][a-zA-Z0-9_]*` | Identificadores de colecciones y claves. |
-| `OP_REL` | `==` \| `!=` \| `>` \| `<` \| `>=` \| `<=` | Operadores de comparación. |
+| **Palabras reservadas** | `INSERT`, `FIND`, `UPDATE`, `REMOVE`, `INTO`, `VALUES`, `WHERE`, `SET` | Comandos del lenguaje. |
+| `ID` | `[a-zA-Z_][a-zA-Z0-9_]*` | Nombres de colecciones y llaves. |
 | `STRING` | `"(...)"` \| `'(...)'` | Literales de texto. |
-| `NUMBER` | `[0-9]+(.[0-9]+)?` | Valores numéricos. |
+| `NUMBER` | `[0-9]+(.[0-9]+)?` | Valores numéricos enteros y decimales. |
 | `BOOLEAN` | `true` \| `false` | Valores lógicos. |
-| `WS` | `[ \t\r\n]+ -> skip` | Ignorar espacios en blanco. |
+| `OP_REL` | `==` \| `!=` \| `>` \| `<` \| `>=` \| `<=` | Operadores de comparación. |
+| `WS` | `[ \t\r\n]+ -> skip` | Espacios en blanco y saltos de línea (ignorar). |
