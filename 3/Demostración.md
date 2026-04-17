@@ -35,3 +35,15 @@ Una gramática es LL(1) si para toda producción $A \rightarrow \alpha \mid \bet
    - **Prueba:** No aplica para S, y A/B solo tienen una opción, eliminando conflictos.
 
 **Resultado:** La gramática es **LL(1)**.
+
+---
+
+## 5. Compilación y Ejecución
+
+**Compilar y ejecutar (un solo comando):**
+
+```bash
+java -jar antlr-4.13.2-complete.jar -Dlanguage=Python3 -o generated PruebaLL1.g4 && python test.py
+```
+
+> La compilación solo es necesaria la primera vez. Las siguientes veces basta con `python test.py`.
